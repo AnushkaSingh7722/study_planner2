@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Planner</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #F5F5F5; color: #333; }
+        .container { display: flex; height: 100vh; }
+        .sidebar { width: 250px; background-color: #2C3E50; color: white; padding: 20px; box-shadow: 2px 0 5px rgba(0,0,0,0.1); }
+        .sidebar h2 { margin-top: 0; }
+        .sidebar ul { list-style: none; padding: 0; }
+        .sidebar li { margin: 10px 0; }
+        .sidebar a { color: white; text-decoration: none; display: block; padding: 10px; border-radius: 5px; transition: background 0.3s; }
+        .sidebar a:hover { background-color: #34495E; }
+        .main { flex: 1; padding: 20px; overflow-y: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .task-form { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .task-form input, .task-form select, .task-form textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
+        .task-form button { background-color: #4A90E2; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        .task-form button:hover { background-color: #357ABD; }
+        .task-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .task { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .task h3 { margin-top: 0; }
+        .task p { margin: 5px 0; }
+        .task .priority { font-weight: bold; }
+        .task .actions { margin-top: 10px; }
+        .task button { margin-right: 10px; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer; }
+        .complete { background-color: #27AE60; color: white; }
+        .delete { background-color: #E74C3C; color: white; }
+        .progress { margin-top: 20px; }
+        .progress-bar { width: 100%; height: 20px; background-color: #ddd; border-radius: 10px; overflow: hidden; }
+        .progress-fill { height: 100%; background-color: #4A90E2; transition: width 0.3s; }
+        @media (max-width: 768px) { .container { flex-direction: column; } .sidebar { width: 100%; height: auto; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h2>Study Planner</h2>
+            <ul>
+                <li><a href="#" onclick="showSection('tasks')"><i class="fas fa-tasks"></i> Tasks</a></li>
+                <li><a href="#" onclick="showSection('schedule')"><i class="fas fa-calendar"></i> Schedule</a></li>
+                <li><a href="#" onclick="showSection('progress')"><i class="fas fa-chart-line"></i> Progress</a></li>
+            </ul>
+        </div>
+        <div class="main">
+            <div id="tasks" class="section">
+                <div class="header">
+                    <h1>My Tasks</h1>
+                    <button onclick="showForm()">Add Task</button>
+                </div>
+                <div id="task-form" class="task-form" style="display: none;">
+                    <h2>Add New Task</h2>
+                    <input type="text" id="task-title" placeholder="Task Title" required>
+                    <textarea id="task-desc" placeholder="Description"></textarea>
+                    <input type="date" id="task-due">
+                    <select id="task-priority">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                    <button onclick="addTask()">Save Task</button>
+                </div>
+                <div id="task-list" class="task-list"></div>
+            </div>
+            <div id="schedule" class="section" style="display: none;">
+                <h1>Weekly Schedule</h1>
+                <p>Feature coming soon: Integrate with a calendar API for full scheduling.</p>
+            </div>
+            <div id="progress" class="section" style="display: none;">
+                <h1>Progress</h1>
+                <div class="progress">
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill" style="width: 0%;"></div>
+                    </div>
+                    <p id="progress-text">0% Complete</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        let currentSection = 'tasks';
+
+        function showSection(section) {
+            document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+            document.getElementById(section).style.display = 'block';
+            currentSection = section;
+        }
+
+        function showForm() {
+            document.getElementById('task-form').style.display = 'block';
+        }
+
+        function addTask() {
+            const title = document.getElementById('task-title').value;
+            const desc = document.getElementById('task-desc').value;
+            const due = document.getElementById('task-due').value;
+            const priority = document.getElementById('task-priority').value;
+            if (title) {
+                tasks.push({ id: Date.now(), title, desc, due, priority, completed: false });
+                saveTasks();
+                renderTasks();
+                document.getElementById('task-form').reset();
+                document.getElementById('task-form').style.display = 'none';
+            }
+        }
+
+        function renderTasks() {
+            const list = document.getElementById('task-list');
+            list.innerHTML = '';
+            tasks.forEach(task => {
+                const taskEl = document.createElement('div');
+                taskEl.className = 'task';
+                taskEl.innerHTML = `
+                    <h3>${task.title}</h3>
+                    <p>${task.desc}</p>
+                    <p>Due: ${task.due || 'No date'}</p>
+                    <p class="priority">Priority: ${task.priority}</p>
+                    <div class="actions">
+                        <button class="complete" onclick="toggleComplete(${task.id})">${task.completed ? 'Undo' : 'Complete'}</button>
+                        <button class="delete" onclick="deleteTask(${task.id})">Delete</button>
+                    </div>
+                `;
+                list.appendChild(taskEl);
+            });
+            updateProgress();
+        }
+
+        function toggleComplete(id) {
+            const task = tasks.find(t => t.id === id);
+            task.completed = !task.completed;
+            saveTasks();
+            renderTasks();
+        }
+
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            saveTasks();
+            renderTasks();
+        }
+
+        function updateProgress() {
+            const completed = tasks.filter(t => t.completed).length;
+            const percent = tasks.length ? (completed / tasks.length) * 100 : 0;
+            document.getElementById('progress-fill').style.width = `${percent}%`;
+            document.getElementById('progress-text').textContent = `${Math.round(percent)}% Complete`;
+        }
+
+        function saveTasks() {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+        }
+
+        renderTasks();
+    </script>
+</body>
+</html>
